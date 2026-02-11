@@ -19,12 +19,12 @@ metadata:
   name: todoapp-config
   namespace: todoapp
 data:
-  NODE_ENV: "production"
-  ALLOWED_ORIGINS: "https://yourdomain.com"
-  POSTGRES_HOST: "todoapp-postgres"
-  POSTGRES_PORT: "5432"
-  POSTGRES_DB: "todoapp"
-  POSTGRES_USER: "todoapp"
+  NODE_ENV: 'production'
+  ALLOWED_ORIGINS: 'http://localhost:30001'
+  POSTGRES_HOST: 'todoapp-postgres'
+  POSTGRES_PORT: '5432'
+  POSTGRES_DB: 'todoapp'
+  POSTGRES_USER: 'todoapp'
 
 ---
 # ========================================
@@ -54,7 +54,7 @@ spec:
   resources:
     requests:
       storage: 10Gi
-  storageClassName: standard
+  storageClassName: hostpath
 
 ---
 # ========================================
@@ -79,7 +79,7 @@ spec:
     spec:
       containers:
         - name: postgres
-          image: postgres:16-alpine
+          image: postgres:18-alpine
           ports:
             - containerPort: 5432
               name: postgres
@@ -101,7 +101,7 @@ spec:
                   key: postgres-password
           volumeMounts:
             - name: postgres-storage
-              mountPath: /var/lib/postgresql/data
+              mountPath: /var/lib/postgresql
           livenessProbe:
             exec:
               command:
@@ -175,7 +175,7 @@ spec:
         fsGroup: 1001
       containers:
         - name: todoapp
-          image: ghcr.io/your-username/docker-nodejs-sample:latest
+          image: boo26/nodejs-sample:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
@@ -231,11 +231,11 @@ spec:
             periodSeconds: 5
           resources:
             requests:
-              memory: "256Mi"
-              cpu: "250m"
+              memory: '256Mi'
+              cpu: '250m'
             limits:
-              memory: "512Mi"
-              cpu: "500m"
+              memory: '512Mi'
+              cpu: '500m'
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -255,43 +255,15 @@ metadata:
   labels:
     app: todoapp
 spec:
-  type: ClusterIP
+  type: NodePort
   ports:
     - name: http
       port: 80
       targetPort: 3000
+      nodePort: 30001
       protocol: TCP
   selector:
     app: todoapp
-
----
-# ========================================
-# Ingress for External Access
-# ========================================
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: todoapp-ingress
-  namespace: todoapp
-  annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
-spec:
-  tls:
-    - hosts:
-        - yourdomain.com
-      secretName: todoapp-tls
-  rules:
-    - host: yourdomain.com
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: todoapp-service
-                port:
-                  number: 80
 
 ---
 # ========================================
